@@ -1,35 +1,35 @@
-> 版权归作者所有，如有转发，请注明文章出处：<https://cyrus-studio.github.io/blog/>
+> Авторские права принадлежат автору, при перепечатке указывайте источник статьи: <https://cyrus-studio.github.io/blog/>
 
 # **DEF CON**
 
 
 
-DEF CON 是全球最大的计算机安全会议之一（极客的奥斯卡），自1993年6月起，每年在美国内华达州的拉斯维加斯举办。
+DEF CON - одна из крупнейших в мире конференций по компьютерной безопасности (Оскар для гиков), которая проводится ежегодно в Лас-Вегасе, штат Невада, с июня 1993 года.
 
 
 
-官网：[https://media.defcon.org/](https://media.defcon.org/)，DEF CON 黑客大会官方的媒体存档站点，提供历年 DEF CON 大会的公开演讲、幻灯片、视频、音频、代码示例和其他相关资源的免费下载。
+Официальный сайт: [https://media.defcon.org/](https://media.defcon.org/), официальный сайт медиа-архива конференции DEF CON, предлагает бесплатное скачивание публичных выступлений, слайдов, видео, аудио, примеров кода и других связанных ресурсов с прошлых конференций DEF CON.
 
 
 
-在 DEF CON 25（2017 年）上，Check Point 的安全研究员 Slava Makkaveev 和 Avi Bashan 发表了题为《Unboxing Android: Everything You Wanted to Know About Android Packers》的演讲，深入探讨了 Android 应用程序中的加壳技术及其安全影响。
+На DEF CON 25 (2017 год) исследователи безопасности из Check Point Слава Маккавиев и Ави Башан выступили с докладом "Unboxing Android: Everything You Wanted to Know About Android Packers", в котором подробно рассмотрели технологии упаковки приложений Android и их влияние на безопасность.
 
 
 
-报告文件地址：
+Адрес файла отчета:
 
 [https://media.defcon.org/DEF%20CON%2025/DEF%20CON%2025%20presentations/DEF%20CON%2025%20-%20Slava-Makkaveev-and-Avi-Bashan-Unboxing-Android.pdf](https://media.defcon.org/DEF%20CON%2025/DEF%20CON%2025%20presentations/DEF%20CON%2025%20-%20Slava-Makkaveev-and-Avi-Bashan-Unboxing-Android.pdf)
 
 
 
-对于国内加壳厂商也有分析
+Также есть анализ китайских производителей упаковки
 
 
 
 ![word/media/image1.png](https://gitee.com/cyrus-studio/images/raw/master/85777d44ae42a2c7de18295d01712c01.png)
 
 
-DEF 的安全研究员选择的两个脱壳点：art::OpenAndReadMagic 和 DexFile::DexFile
+Исследователи безопасности DEF выбрали две точки для распаковки: art::OpenAndReadMagic и DexFile::DexFile
 
 
 
@@ -40,23 +40,23 @@ DEF 的安全研究员选择的两个脱壳点：art::OpenAndReadMagic 和 DexFi
 
 
 
-在 DEF CON 25 (2017) 上，Avi Bashan 和 Slava Makkaveev 提出过一种非常实用的 Android 加壳脱壳技术：
+На DEF CON 25 (2017) Ави Башан и Слава Маккавиев предложили очень практичную технику распаковки приложений Android:
 
 
 
-通过修改 DexFile::DexFile() 构造函数和 OpenAndReadMagic() 方法，可以在应用运行时，拦截 DEX 文件加载过程，从而拿到已经解密后的内存数据，完成脱壳。
+Изменяя конструктор DexFile::DexFile() и метод OpenAndReadMagic(), можно перехватить процесс загрузки DEX-файлов во время выполнения приложения, чтобы получить расшифрованные данные из памяти и завершить распаковку.
 
 
 
-## **1. DexFile::DexFile 构造函数**
+## **1. Конструктор DexFile::DexFile**
 
 
 
-可以看到 DexFile::DexFile() 的构造函数参数里包含了：
+Можно увидеть, что параметры конструктора DexFile::DexFile() включают:
 
-- const uint8_t* base —— DEX 在内存中的起始地址
+- const uint8_t* base — начальный адрес DEX в памяти
 
-- size_t size —— DEX 的内存大小
+- size_t size — размер DEX в памяти
 
 ```
 DexFile::DexFile(const uint8_t* base,
@@ -109,22 +109,22 @@ DexFile::DexFile(const uint8_t* base,
 ![word/media/image3.png](https://gitee.com/cyrus-studio/images/raw/master/19c80e4b1d1d1e8ba82186864d060e97.png)
 
 
-插入脱壳代码示例
+Пример вставки кода для распаковки
 
 ```
-// 打印当前 DEX 文件的位置
+// Печать текущего местоположения DEX-файла
 LOG(WARNING) << "Dex File: Filename: " << location;
 
-// 判断这个 DEX 是不是从 APP 自身私有目录 加载的。
-// 因为系统自己的 framework、boot.oat 里的 DEX 都不是加壳 DEX，只想 dump 应用自己的 DEX。
+// Проверка, загружается ли этот DEX из собственного приватного каталога приложения.
+// Поскольку DEX-файлы из системных фреймворков и boot.oat не являются упакованными DEX, мы хотим только распаковать DEX-файлы приложения.
 if (location.find("/data/data/") != std::string::npos) {
     LOG(WARNING) << "Dex File: OAT file unpacking launched";
 
-    // 创建一个新的文件，比如 /data/data/包名/xxx.dex__unpacked_oat。
+    // Создание нового файла, например /data/data/пакет/xxx.dex__unpacked_oat.
     std::ofstream dst(location + "__unpacked_oat", std::ios::binary);
-    // 把内存里的 DEX 数据完整写入磁盘。
+    // Запись данных DEX из памяти на диск.
     dst.write(reinterpret_cast<const char*>(base), size);
-    // 保存文件，完成脱壳。
+    // Сохранение файла, завершение распаковки.
     dst.close();
 } else {
     LOG(WARNING) << "Dex File: OAT file unpacking not launched";
@@ -136,7 +136,7 @@ if (location.find("/data/data/") != std::string::npos) {
 
 
 
-这是辅助检查 DEX 文件头的函数。
+Это вспомогательная функция для проверки заголовка DEX-файла.
 
 ```
 File OpenAndReadMagic(const char* filename, uint32_t* magic, std::string* error_msg) {
@@ -162,87 +162,87 @@ File OpenAndReadMagic(const char* filename, uint32_t* magic, std::string* error_
 ![word/media/image4.png](https://gitee.com/cyrus-studio/images/raw/master/c4f07ae80a53cb21b2ed7bb7b2ee3f58.png)
 
 
-插入脱壳代码示例
+Пример вставки кода для распаковки
 
 ```
-struct stat st;  // 用于获取文件大小等信息
+struct stat st;  // Для получения информации о размере файла и т.д.
 
-// 打印当前正在处理的文件路径，便于调试和观察加载的 DEX 来源
+// Печать текущего обрабатываемого пути файла для отладки и наблюдения за источником загружаемого DEX
 LOG(WARNING) << "File_magic: Filename: " << filename;
 
-// 只处理 /data/data 路径下的文件（即应用私有目录中的 dex 文件）
-// 这样可以避免处理系统 DEX，提高效率和准确性
+// Обработка только файлов в пути /data/data (т.е. DEX-файлов в приватном каталоге приложения)
+// Это позволяет избежать обработки системных DEX, повышая эффективность и точность
 if (strstr(filename, "/data/data") != NULL) {
   LOG(WARNING) << "File_magic: DEX file unpacking launched";
 
-  // 构造输出文件路径，加上 "__unpacked_dex" 后缀
+  // Создание пути к выходному файлу с добавлением суффикса "__unpacked_dex"
   char* fn_out = new char[PATH_MAX];
   strcpy(fn_out, filename);
   strcat(fn_out, "__unpacked_dex");
 
-  // 创建输出文件，设置权限：用户可读写、用户组可读、其他人可读
+  // Создание выходного файла с правами: пользователь может читать и записывать, группа пользователей может читать, другие могут читать
   int fd_out = open(fn_out, O_WRONLY | O_CREAT | O_EXCL,
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
-  // 如果获取原始 dex 文件信息成功（用于获取文件大小）
+  // Если успешно получена информация о исходном DEX-файле (для получения размера файла)
   if (!fstat(fd.get(), &st)) {
-    // 使用 mmap 将整个 dex 文件映射到内存中
+    // Использование mmap для отображения всего DEX-файла в память
     char* addr = (char*)mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd.get(), 0);
 
-    // 将内存中的内容写入到新文件，完成磁盘级别的 dex dump
+    // Запись содержимого из памяти в новый файл, завершение дампа DEX на уровне диска
     int ret = write(fd_out, addr, st.st_size);
 
-    // 可选防优化代码（保证 ret 被使用，防止编译器优化）
+    // Опциональный код для предотвращения оптимизации (гарантирует использование ret, предотвращая оптимизацию компилятора)
     ret += 1;
 
-    // 解除映射，释放内存
+    // Освобождение отображения, освобождение памяти
     munmap(addr, st.st_size);
   }
 
-  // 关闭输出文件，清理路径内存
+  // Закрытие выходного файла, очистка памяти пути
   close(fd_out);
   delete[] fn_out;
 
 } else {
-  // 如果不是应用私有路径下的文件，跳过处理
+  // Если файл не находится в приватном пути приложения, пропуск обработки
   LOG(WARNING) << "File_magic: DEX file unpacking not launched";
 }
 ```
 
 
-# **ART 下脱壳原理**
+# **Принцип распаковки под ART**
 
 
 
-ART 下常见的两个 dex 加载器：InMemoryDexClassLoader 和 DexClassLoader
+Два распространенных загрузчика dex под ART: InMemoryDexClassLoader и DexClassLoader
 
 
 
-## **InMemoryDexClassLoader 源码分析**
+## **Анализ исходного кода InMemoryDexClassLoader**
 
 
 
-InMemoryDexClassLoader 是 Android 8.0（API 级别 26）引入的一个类，用于动态加载内存中的 Dex。
+InMemoryDexClassLoader - это класс, введенный в Android 8.0 (API уровень 26), который используется для динамической загрузки Dex из памяти.
 
 
 
-调用示例：
+Пример вызова:
 
 ```
-// 假设 dexBytes 是你的 DEX 文件内容（可以通过解密获得）
+// Предположим, что dexBytes - это содержимое вашего DEX-файла (может быть получено путем расшифровки)
 ByteBuffer buffer = ByteBuffer.wrap(dexBytes);
 
-// 创建 InMemoryDexClassLoader
+// Создание InMemoryDexClassLoader
 ClassLoader loader = new InMemoryDexClassLoader(buffer, ClassLoader.getSystemClassLoader());
 
-// 通过反射加载类并调用方法
+// Загрузка класса через рефлексию и вызов метода
 Class<?> clazz = loader.loadClass("com.example.MyHiddenClass");
 Method m = clazz.getDeclaredMethod("secretMethod");
 m.invoke(null);
 ```
 
 
-InMemoryDexClassLoader 支持加载 内存中 一个或多个 Dex。源码如下：
+InMemoryDexClassLoader поддерживает загрузку одного или нескольких Dex из памяти. Исходный код выглядит следующим образом:
 
 
 
@@ -255,7 +255,7 @@ InMemoryDexClassLoader 支持加载 内存中 一个或多个 Dex。源码如下
 
 
 
-Dex 加载过程如下，最终调用到 native 方法 openInMemoryDexFilesNative
+Процесс загрузки Dex выглядит следующим образом, в конечном итоге вызывается native метод openInMemoryDexFilesNative
 
 ```
  InMemoryDexClassLoader(ByteBuffer[] dexBuffers, String librarySearchPath, ClassLoader parent)
@@ -270,7 +270,7 @@ Dex 加载过程如下，最终调用到 native 方法 openInMemoryDexFilesNativ
 
 
 
-DexFile_openInMemoryDexFilesNative 中 调用 OpenDexFilesFromOat 方法 加载 Dex ：
+В методе DexFile_openInMemoryDexFilesNative вызывается метод OpenDexFilesFromOat для загрузки Dex:
 
 ```
 static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
@@ -289,7 +289,7 @@ static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
   ScopedIntArrayAccessor starts(env, jstarts);
   ScopedIntArrayAccessor ends(env, jends);
 
-  // Allocate memory for dex files and copy data from ByteBuffers.
+  // Выделение памяти для dex-файлов и копирование данных из ByteBuffers.
   std::vector<MemMap> dex_mem_maps;
   dex_mem_maps.reserve(buffers_length);
   for (jsize i = 0; i < buffers_length; ++i) {
@@ -305,7 +305,7 @@ static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
     }
 
     if (array == nullptr) {
-      // Direct ByteBuffer
+      // Прямой ByteBuffer
       uint8_t* base_address = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(buffer));
       if (base_address == nullptr) {
         ScopedObjectAccess soa(env);
@@ -315,7 +315,7 @@ static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
       size_t length = static_cast<size_t>(end - start);
       memcpy(dex_data.Begin(), base_address + start, length);
     } else {
-      // ByteBuffer backed by a byte array
+      // ByteBuffer, поддерживаемый массивом байтов
       jbyte* destination = reinterpret_cast<jbyte*>(dex_data.Begin());
       env->GetByteArrayRegion(array, start, end - start, destination);
     }
@@ -323,8 +323,7 @@ static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
     dex_mem_maps.push_back(std::move(dex_data));
   }
 
-  // Hand MemMaps over to OatFileManager to open the dex files and potentially
-  // create a backing OatFile instance from an anonymous vdex.
+  // Передача MemMaps в OatFileManager для открытия dex-файлов и потенциального создания резервного экземпляра OatFile из анонимного vdex.
   std::vector<std::string> error_msgs;
   const OatFile* oat_file = nullptr;
   std::vector<std::unique_ptr<const DexFile>> dex_files =
@@ -344,7 +343,7 @@ static jobject DexFile_openInMemoryDexFilesNative(JNIEnv* env,
 
 
 
-OpenDexFilesFromOat 调用 OpenDexFilesFromOat_Impl 加载 Dex
+Метод OpenDexFilesFromOat вызывает метод OpenDexFilesFromOat_Impl для загрузки Dex
 
 ```
 std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_Impl(
@@ -357,17 +356,17 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_
   std::string error_msg;
   DCHECK(error_msgs != nullptr);
 
-  // [1] 提取 Dex Header，用于后续校验 checksum、生成路径等
+  // [1] Извлечение заголовка Dex для последующей проверки контрольной суммы, генерации пути и т.д.
   const std::vector<const DexFile::Header*> dex_headers = GetDexFileHeaders(dex_mem_maps);
 
-  // [2] 生成临时匿名 dex/vdex 文件路径，获取 checksum 和路径
+  // [2] Генерация временного анонимного пути к файлам dex/vdex, получение контрольной суммы и пути
   uint32_t location_checksum;
   std::string dex_location;
   std::string vdex_path;
   bool has_vdex = OatFileAssistant::AnonymousDexVdexLocation(
       dex_headers, kRuntimeISA, &location_checksum, &dex_location, &vdex_path);
 
-  // [3] 尝试打开 vdex 文件，并检查其中的 dex checksum 是否一致
+  // [3] Попытка открыть файл vdex и проверить, совпадают ли контрольные суммы dex
   std::unique_ptr<VdexFile> vdex_file = nullptr;
   if (has_vdex && OS::FileExists(vdex_path.c_str())) {
     vdex_file = VdexFile::Open(vdex_path, /*writable=*/false, /*low_4gb=*/false,
@@ -380,7 +379,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_
     }
   }
 
-  // [4] 加载内存中的 dex。若存在 vdex 且校验成功，可跳过结构校验
+  // [4] Загрузка dex из памяти. Если vdex существует и проверка прошла успешно, можно пропустить проверку структуры
   std::vector<std::unique_ptr<const DexFile>> dex_files;
   for (size_t i = 0; i < dex_mem_maps.size(); ++i) {
     static constexpr bool kVerifyChecksum = true;
@@ -393,19 +392,19 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_
         kVerifyChecksum,
         &error_msg));
     if (dex_file != nullptr) {
-      dex::tracking::RegisterDexFile(dex_file.get());  // 注册用于调试追踪
+      dex::tracking::RegisterDexFile(dex_file.get());  // Регистрация для отладки и отслеживания
       dex_files.push_back(std::move(dex_file));
     } else {
       error_msgs->push_back("Failed to open dex files from memory: " + error_msg);
     }
   }
 
-  // [5] 若 vdex 不存在、加载失败，或 class_loader 为空，直接返回 dex_files
+  // [5] Если vdex не существует, загрузка не удалась или class_loader пуст, возвращаем dex_files
   if (vdex_file == nullptr || class_loader == nullptr || !error_msgs->empty()) {
     return dex_files;
   }
 
-  // [6] 创建 ClassLoaderContext，确保之后的 oat 加载上下文一致
+  // [6] Создание ClassLoaderContext, чтобы обеспечить一致ность контекста загрузки oat
   std::unique_ptr<ClassLoaderContext> context = ClassLoaderContext::CreateContextForClassLoader(
       class_loader, dex_elements);
   if (context == nullptr) {
@@ -415,13 +414,13 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_
   DCHECK(context->OpenDexFiles(kRuntimeISA, ""))
       << "Context created from already opened dex files should not attempt to open again";
 
-  // [7] 检查 boot class path checksum 和 class loader context 是否匹配
+  // [7] Проверка контрольных сумм boot class path и соответствия контекста class loader
   if (!vdex_file->MatchesBootClassPathChecksums() ||
       !vdex_file->MatchesClassLoaderContext(*context.get())) {
     return dex_files;
   }
 
-  // [8] 从 vdex 创建 OatFile 实例并注册
+  // [8] Создание экземпляра OatFile из vdex и регистрация
   std::unique_ptr<OatFile> oat_file(OatFile::OpenFromVdex(
       MakeNonOwningPointerVector(dex_files),
       std::move(vdex_file),
@@ -437,19 +436,19 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat_
 
 
 
-在 Android 10 之前，InMemoryDexClassLoader 加载的 DEX 文件不会被编译为 OAT 文件，而是直接在解释模式下执行， 这也是它和 DexClassLoader 的区别。
+До Android 10, DEX-файлы, загруженные InMemoryDexClassLoader, не компилировались в OAT-файлы, а выполнялись в режиме интерпретации, что отличает его от DexClassLoader.
 
 
 
-从 Android 10 开始，InMemoryDexClassLoader 加载的 DEX 文件也会走 OAT 流程。
+С Android 10, DEX-файлы, загруженные InMemoryDexClassLoader, также проходят через процесс OAT.
 
 
 
-DexFile_openInMemoryDexFilesNative → DexFile::DexFile 调用路径
+Путь вызова DexFile_openInMemoryDexFilesNative → DexFile::DexFile
 
 ```
 DexFile_openInMemoryDexFilesNative(...)                    
-└── AllocateDexMemoryMap(...) 创建 dex_mem_maps
+└── AllocateDexMemoryMap(...) Создание dex_mem_maps
 └── Runtime::Current()->GetOatFileManager().OpenDexFilesFromOat(...) 
     └── OatFileManager::OpenDexFilesFromOat(dex_mem_maps, class_loader, dex_elements, out_oat_file, error_msgs)
         └── OatFileManager::OpenDexFilesFromOat_Impl(...)
@@ -467,7 +466,7 @@ DexFile_openInMemoryDexFilesNative(...)
 
 
 
-在这些关键 api 当中我们都可以拿到 dex 的起始地址和 size 来进行 dump
+В этих ключевых API мы можем получить начальный адрес и размер dex для дампа
 
 ```
 ArtDexFileLoader::Open(location, location_checksum, map, verify, verify_checksum, error_msg)
@@ -486,15 +485,15 @@ ArtDexFileLoader::Open(location, location_checksum, map, verify, verify_checksum
 
 
 
-## **DexClassLoader 源码分析**
+## **Анализ исходного кода DexClassLoader**
 
 
 
-DexClassLoader 可以加载任意路径下的 dex，或者 jar、apk、zip 文件（包含classes.dex）。
+DexClassLoader может загружать dex из любого пути, а также jar, apk, zip файлы (содержащие classes.dex).
 
 
 
-源码如下：
+Исходный код выглядит следующим образом:
 
 
 
@@ -507,11 +506,11 @@ DexClassLoader 可以加载任意路径下的 dex，或者 jar、apk、zip 文�
 
 
 
-DexClassLoader 最终是通过 JNI 调用 DexFile_openDexFileNative 来加载 Dex。
+DexClassLoader в конечном итоге вызывает JNI метод DexFile_openDexFileNative для загрузки Dex.
 
 
 
-下面是从 Java 到 native 的完整调用路径（以 Android 10 为例）：
+Ниже приведен полный путь вызова от Java до native (на примере Android 10):
 
 ```
 DexClassLoader(String dexPath, String optimizedDirectory, String librarySearchPath, ClassLoader parent)
@@ -528,13 +527,13 @@ DexFile.openDexFile(fileName, null, 0, loader, elements)
    ↓
 DexFile.openDexFileNative(sourceFile, outputFile, flags, loader, elements)
    ↓
-DexFile_openDexFileNative(...) （native 层）
+DexFile_openDexFileNative(...) (native уровень)
 ```
 [https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:libcore/dalvik/src/main/java/dalvik/system/DexFile.java;l=440](https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:libcore/dalvik/src/main/java/dalvik/system/DexFile.java;l=440)
 
 
 
-DexFile_openDexFileNative 方法中调用 OpenDexFilesFromOat 方法生成 OAT 文件：
+В методе DexFile_openDexFileNative вызывается метод OpenDexFilesFromOat для создания OAT-файла:
 
 ```
 static jobject DexFile_openDexFileNative(JNIEnv* env,
@@ -568,11 +567,11 @@ static jobject DexFile_openDexFileNative(JNIEnv* env,
 
 
 
-和 InMemoryDexClassLoader 不同的是：这里传入的参数不是 MemMap，而是 const char* dex_location。
+В отличие от InMemoryDexClassLoader, здесь передается не MemMap, а const char* dex_location.
 
 
 
-OpenDexFilesFromOat 方法源码如下：
+Исходный код метода OpenDexFilesFromOat выглядит следующим образом:
 
 ```
 std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
@@ -585,12 +584,12 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
   CHECK(dex_location != nullptr);
   CHECK(error_msgs != nullptr);
 
-  // 步骤 1: 确保未持有 mutator_lock，防止阻塞 GC
+  // Шаг 1: Убедиться, что не удерживается mutator_lock, чтобы предотвратить блокировку GC
   Thread* const self = Thread::Current();
   Locks::mutator_lock_->AssertNotHeld(self);
   Runtime* const runtime = Runtime::Current();
 
-  // 步骤 2: 构造 ClassLoaderContext（可能为空）
+  // Шаг 2: Создание ClassLoaderContext (может быть пустым)
   std::unique_ptr<ClassLoaderContext> context;
   if (class_loader == nullptr) {
     LOG(WARNING) << "Opening an oat file without a class loader. "
@@ -600,13 +599,13 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
     context = ClassLoaderContext::CreateContextForClassLoader(class_loader, dex_elements);
   }
 
-  // 步骤 3: 构建 OatFileAssistant，用于操作 oat 和 dex 文件
+  // Шаг 3: Создание OatFileAssistant для работы с oat и dex файлами
   OatFileAssistant oat_file_assistant(dex_location,
                                       kRuntimeISA,
                                       !runtime->IsAotCompiler(),
                                       only_use_system_oat_files_);
 
-  // 步骤 4: 获取磁盘上最优的 OAT 文件
+  // Шаг 4: Получение лучшего OAT-файла на диске
   std::unique_ptr<const OatFile> oat_file(oat_file_assistant.GetBestOatFile().release());
   VLOG(oat) << "OatFileAssistant(" << dex_location << ").GetBestOatFile()="
             << reinterpret_cast<uintptr_t>(oat_file.get())
@@ -616,12 +615,12 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
   CheckCollisionResult check_collision_result = CheckCollisionResult::kPerformedHasCollisions;
   std::string error_msg;
 
-  // 步骤 5: 进行 collision 检查决定是否接受这个 oat 文件
+  // Шаг 5: Проведение проверки на коллизии для решения, принимать ли этот oat файл
   if ((class_loader != nullptr || dex_elements != nullptr) && oat_file != nullptr) {
     check_collision_result = CheckCollision(oat_file.get(), context.get(), &error_msg);
     bool accept_oat_file = AcceptOatFile(check_collision_result);
 
-    // 检查结果为 false，判断是否启用 fallback 并记录警告信息
+    // Если результат проверки false, определить, включен ли fallback, и записать предупреждающую информацию
     if (!accept_oat_file) {
       if (runtime->IsDexFileFallbackEnabled()) {
         if (!oat_file_assistant.HasOriginalDexFiles()) {
@@ -644,7 +643,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
       LOG(WARNING) << error_msg;
     }
 
-    // 步骤 6: 注册 oat 文件到 OatFileManager
+    // Шаг 6: Регистрация oat файла в OatFileManager
     if (accept_oat_file) {
       VLOG(class_linker) << "Registering " << oat_file->GetLocation();
       source_oat_file = RegisterOatFile(std::move(oat_file));
@@ -654,7 +653,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
 
   std::vector<std::unique_ptr<const DexFile>> dex_files;
 
-  // 步骤 7: 从 OAT 文件加载 dex 文件（如果成功加载了 oat）
+  // Шаг 7: Загрузка dex файлов из OAT файла (если oat успешно загружен)
   if (source_oat_file != nullptr) {
     bool added_image_space = false;
 
@@ -675,7 +674,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
         Handle<mirror::ClassLoader> h_loader(
             hs.NewHandle(soa.Decode<mirror::ClassLoader>(class_loader)));
 
-        // 步骤 8: 尝试将 image space 添加到堆中
+        // Шаг 8: Попытка добавить image space в heap
         if (h_loader != nullptr) {
           std::string temp_error_msg;
           {
@@ -716,7 +715,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
       }
     }
 
-    // 步骤 9: 如果未添加 image space，则从 oat 中手动加载 dex 文件
+    // Шаг 9: Если image space не добавлено, загрузка dex файлов вручную из oat
     if (!added_image_space) {
       DCHECK(dex_files.empty());
       dex_files = oat_file_assistant.LoadDexFiles(*source_oat_file, dex_location);
@@ -726,7 +725,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
       }
     }
 
-    // 步骤 10: 检查是否 dex 文件加载失败
+    // Шаг 10: Проверка, не произошла ли ошибка загрузки dex файлов
     if (dex_files.empty()) {
       error_msgs->push_back("Failed to open dex files from " + source_oat_file->GetLocation());
     } else {
@@ -736,7 +735,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
     }
   }
 
-  // 步骤 11: OAT 加载失败，尝试从原始 dex 文件 fallback 加载
+  // Шаг 11: Если загрузка OAT не удалась, попытка загрузки из оригинального dex файла
   if (dex_files.empty()) {
     if (oat_file_assistant.HasOriginalDexFiles()) {
       if (Runtime::Current()->IsDexFileFallbackEnabled()) {
@@ -761,14 +760,14 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
     }
   }
 
-  // 步骤 12: JIT 启用时注册 dex 文件
+  // Шаг 12: При включенном JIT регистрация dex файлов
   if (Runtime::Current()->GetJit() != nullptr) {
     ScopedObjectAccess soa(self);
     Runtime::Current()->GetJit()->RegisterDexFiles(
         dex_files, soa.Decode<mirror::ClassLoader>(class_loader));
   }
 
-  // 最终返回 dex 文件数组
+  // Возвращение массива dex файлов
   return dex_files;
 }
 ```
@@ -780,7 +779,7 @@ std::vector<std::unique_ptr<const DexFile>> OatFileManager::OpenDexFilesFromOat(
 
 
 
-DexFile_openDexFileNative → DexFile::DexFile 调用路径
+Путь вызова DexFile_openDexFileNative → DexFile::DexFile
 
 ```
 DexFile_openDexFileNative(...)  
@@ -794,13 +793,11 @@ DexFile_openDexFileNative(...)
                                  └── new StandardDexFile(base, location, ...): DexFile(base, location, ...)
                                  └── new CompactDexFile(base, location, ...): DexFile(base, location, ...)
 ```
-[https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libdexfile/dex/art_dex_file_loader.cc;l=223](https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libdexfile/dex/art_dex_file_loader.cc;l=223)
-
-[https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libartbase/base/file_magic.cc?q=OpenAndReadMagic](https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libartbase/base/file_magic.cc?q=OpenAndReadMagic)
+[https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libdexfile/dex/art_dex_file_loader.cc;l=223](https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libartbase/base/file_magic.cc?q=OpenAndReadMagic](https://cs.android.com/android/platform/superproject/+/android-10.0.0_r47:art/libartbase/base/file_magic.cc?q=OpenAndReadMagic)
 
 
 
-在这些关键 api 当中我们都可以拿到 dex 的起始地址和 size 来进行 dump
+В этих ключевых API мы можем получить начальный адрес и размер dex для дампа
 
 ```
 ArtDexFileLoader::Open(filename, location, verify, verify_checksum, error_msg, dex_files)
@@ -817,11 +814,11 @@ ArtDexFileLoader::Open(filename, location, verify, verify_checksum, error_msg, d
 
 
 
-# **通用脱壳点**
+# **Универсальные точки для распаковки**
 
 
 
-所以无论是 InMemoryDexClassLoader 还是 DexClassLoader 加载 Dex 最终都会走到以下方法：
+Таким образом, независимо от того, используется ли InMemoryDexClassLoader или DexClassLoader для загрузки Dex, в конечном итоге они будут обращаться к следующим методам:
 
 ```
 ArtDexFileLoader::OpenCommon(base, size, ...)
@@ -829,44 +826,44 @@ ArtDexFileLoader::OpenCommon(base, size, ...)
         └── new StandardDexFile(base, location, ...): DexFile(base, location, ...)
         └── new CompactDexFile(base, location, ...): DexFile(base, location, ...)
 ```
-在这些关键 api 当中我们都可以拿到 dex 的起始地址和 size 来进行 dump。
+В этих ключевых API мы можем получить начальный адрес и размер dex для дампа.
 
 
 
-# **OAT 文件**
+# **OAT файлы**
 
 
 
-Android 会在安装应用时，或首次运行时通过 dex2oat 将 .dex 文件转换为 .oat 文件。
+Android при установке приложения или при первом запуске использует dex2oat для преобразования .dex файлов в .oat файлы.
 
 
 
-OAT 文件是 Android Runtime（ART）生成的优化后的本地代码文件，其全称是 Optimized Android executable。
+OAT файл - это оптимизированный исполняемый файл Android, созданный Android Runtime (ART), его полное название - Optimized Android executable.
 
 
 
-OAT 文件主要用于：
+OAT файл используется для:
 
-- 加速应用启动时间
+- Ускорения времени запуска приложения
 
-- 减少运行时 JIT 编译压力
+- Снижения нагрузки на JIT компиляцию во время выполнения
 
-- 节省运行时的电量和内存资源
+- Экономии энергии и ресурсов памяти во время выполнения
 
 
 
-一个 .oat 文件大致包含以下几个部分：
+Один .oat файл обычно содержит следующие части:
 
-| 部分 | 描述 |
+| Часть | Описание |
 |--- | ---|
-| Header | 文件头信息，包括版本、校验等 |
-| Dex 文件副本 | 一个或多个原始 .dex 文件的副本 |
-| ELF 可执行体 | 编译后的机器代码，和设备架构相关（ARM/ARM64/x86 等） |
-| VMap Table | 虚拟寄存器映射表，用于调试和异常恢复 |
-| OatMethodData | 每个方法的元数据（偏移、编译类型等） |
+| Заголовок | Информация о заголовке файла, включая версию, проверку и т.д. |
+| Копия Dex файла | Одна или несколько копий оригинальных .dex файлов |
+| ELF исполняемый файл | Скомпилированный машинный код, связанный с архитектурой устройства (ARM/ARM64/x86 и т.д.) |
+| VMap таблица | Таблица отображения виртуальных регистров, используемая для отладки и восстановления после исключений |
+| OatMethodData | Метаданные для каждого метода (смещение, тип компиляции и т.д.) |
 
 
-根据 Android 版本和架构不同，OAT 文件通常存储在以下目录：
+В зависимости от версии Android и архитектуры, OAT файлы обычно хранятся в следующих каталогах:
 
 ```
 /data/app/<package>/oat/arm64/base.odex
@@ -875,11 +872,11 @@ OAT 文件主要用于：
 ```
 
 
-# **找不到 OpenCommon**
+# **Не удается найти OpenCommon**
 
 
 
-使用 Frida list 一下 art 中的函数
+Используйте Frida для перечисления функций в art
 
 
 
@@ -908,42 +905,42 @@ function listAllFunctions(moduleName) {
     console.log(`[*] Total function symbols found in ${moduleName}:`, count);
 }
 
-// 列出 libart.so 的所有函数
+// Перечисление всех функций в libart.so
 setImmediate(function () {
     listAllFunctions("libart.so");
 });
 ```
 
 
-执行脚本
+Выполнение скрипта
 
 ```
 frida -H 127.0.0.1:1234  -F -l list_module_functions.js -o log.txt
 ```
 
 
-发现并没有 OpenCommon（LineageOS 17.1，Android 10）
+Обнаружено, что нет функции OpenCommon (LineageOS 17.1, Android 10)
 
 
 
 ![word/media/image7.png](https://gitee.com/cyrus-studio/images/raw/master/2090c5bd30815303cb2c4f2e6fa4bdb7.png)
 
 
-进入 adb shell，执行下面命令得到 APP 的  pid 为16418
+Войдите в adb shell и выполните следующую команду, чтобы получить pid приложения 16418
 
 ```
 pidof pidof com.cyrus.example
 ```
 
 
-查看该进程加载的 libart.so 在什么位置
+Проверьте, где загружен libart.so в этом процессе
 
 ```
 cat /proc/16418/maps | grep libart.so
 ```
 
 
-输出如下：
+Вывод следующий:
 
 ```
 7a27617000-7a27744000 r--p 00000000 103:1d 313                           /apex/com.android.runtime/lib64/libart.so
@@ -953,32 +950,32 @@ cat /proc/16418/maps | grep libart.so
 ```
 
 
-把 libart.so 拉取到本地
+Скопируйте libart.so на локальный компьютер
 
 ```
 adb pull /apex/com.android.runtime/lib64/libart.so
 ```
 
 
-使用 IDA 打开 libart.so，确实没有 OpenCommon 函数
+Используйте IDA для открытия libart.so, действительно нет функции OpenCommon
 
 
 
 ![word/media/image8.png](https://gitee.com/cyrus-studio/images/raw/master/4683658ba6cf3fc6420618d87bce3b62.png)
 
 
-# **找到 OpenCommon**
+# **Найти OpenCommon**
 
 
 
-编写一个 Frida 脚本，遍历所有模块的符号，筛选出函数名中包含 "OpenCommon" 或 "DexFileLoader" 的符号，并打印出来（包括模块名、符号名、地址）
+Напишите скрипт Frida, чтобы просканировать все модули на наличие символов, содержащих "OpenCommon" или "DexFileLoader", и вывести их (включая имя модуля, имя символа, адрес)
 
 
 
 find_symbols.js
 
 ```
-// Frida 脚本：查找所有模块中包含 "OpenCommon" 或 "DexFileLoader" 的函数符号
+// Скрипт Frida: поиск всех модулей, содержащих символы "OpenCommon" или "DexFileLoader"
 function scanModulesForKeywords(keywords) {
     const modules = Process.enumerateModules();
     keywords = keywords.map(k => k.toLowerCase());
@@ -995,7 +992,7 @@ function scanModulesForKeywords(keywords) {
                 }
             }
         } catch (e) {
-            // 某些模块无法枚举，忽略
+            // Некоторые модули не могут быть перечислены, игнорируем
         }
     }
 }
@@ -1011,7 +1008,7 @@ setImmediate(() => {
 ```
 
 
-输出如下：
+Вывод следующий:
 
 ```
 [*] Scanning for symbols containing 'OpenCommon' or 'DexFileLoader' ...
@@ -1073,20 +1070,20 @@ setImmediate(() => {
 ```
 
 
-找到 DexFileLoader::OpenCommon 原来在 libdexfile.so
+Найден DexFileLoader::OpenCommon в libdexfile.so
 
 ```
 [+] libdexfile.so -> _ZN3art13DexFileLoader10OpenCommonEPKhmS2_mRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjPKNS_10OatDexFileEbbPS9_NS3_10unique_ptrINS_16DexFileContainerENS3_14default_deleteISH_EEEEPNS0_12VerifyResultE @ 0x7aac649c28
 ```
-所以 art/runtime/dex_file_loader.cc（DexFileLoader::OpenCommon 实现）最终被编译进 libdexfile.so，而不是 libart.so。
+Таким образом, art/runtime/dex_file_loader.cc (реализация DexFileLoader::OpenCommon) в конечном итоге компилируется в libdexfile.so, а не в libart.so.
 
 
 
-# **OpenCommon 脱壳**
+# **Распаковка через OpenCommon**
 
 
 
-使用 frida hook libdexfile.so 中的 DexFileLoader::OpenCommom 函数并拿到参数 base、size 和 location，把 dex 从内存中 dump 到 /sdcard/Android/data/pkgName/dump_dex 目录下：
+Используйте frida для перехвата функции DexFileLoader::OpenCommon в libdexfile.so и получения параметров base, size и location, чтобы дампить dex в каталог /sdcard/Android/data/pkgName/dump_dex:
 
 ```
 function getProcessName() {
@@ -1236,21 +1233,21 @@ setImmediate(hookDexFileLoaderOpenCommon);
 ```
 
 
-列出当前设备所有进程并通过 findstr 过滤出目标进程
+Перечислите все процессы на текущем устройстве и отфильтруйте целевой процесс с помощью findstr
 
 ```
 frida-ps -H 127.0.0.1:1234 | findstr cyrus
 ```
 
 
-执行脚本开始 dump
+Выполните скрипт для начала дампа
 
 ```
 frida -H 127.0.0.1:1234 -l dump_dex_from_open_common.js -f com.cyrus.example
 ```
 
 
-输出如下：
+Вывод следующий:
 
 ```
 Spawning `com.cyrus.example`...                                         
@@ -1373,36 +1370,36 @@ processName: com.cyrus.example
 ```
 
 
-可以看到 dex 已经 dump 到 sdcard 了
+Можно увидеть, что dex уже дампирован на sdcard
 
 
 
 ![word/media/image9.png](https://gitee.com/cyrus-studio/images/raw/master/55c0144ce3bb1c5eb7ddff465a5cbfd1.png)
 
 
-使用下面的 adb pull 命令，一次性将设备上的整个 dump_dex 目录拉取到本地：
+Используйте команду adb pull, чтобы одним разом скопировать весь каталог dump_dex с устройства на локальный компьютер:
 
 ```
 adb pull /sdcard/Android/data/com.cyrus.example/dump_dex ./dumped_dex
 ```
 
 
-但是日志输出的 magic 可以看到都是  cdex001，cdex 文件是不可以直接通过 dex 反编译工具反编译的
+Однако в выводе видно, что магия дампированных файлов - cdex001, cdex файлы нельзя напрямую декомпилировать с помощью инструментов декомпиляции dex
 
 
 
 ![word/media/image10.png](https://gitee.com/cyrus-studio/images/raw/master/c61540418336f940c463dac5f9533c76.png)
 
 
-# **禁止加载 cdex**
+# **Запрет загрузки cdex**
 
 
 
-Android 9 引入 CompactDex（.cdex，magic 为 cdex001），是 DEX 的压缩优化版本，导致 dump 后无法直接反编译。
+Android 9 ввел CompactDex (.cdex, магия cdex001), это сжатая оптимизированная версия DEX, что делает невозможным декомпиляцию после дампа.
 
 
 
-优化后的 dex/cdex 通常存放在：
+Оптимизированные файлы dex/cdex обычно хранятся в:
 
 ```
 /data/app/package_name/oat/arm64/base.odex
@@ -1410,11 +1407,7 @@ Android 9 引入 CompactDex（.cdex，magic 为 cdex001），是 DEX 的压缩�
 ```
 
 
-在 Android 9（Pie）中，APP 的 .cdex 文件 是由 dex2oat 优化生成的，通常以 odex, vdex 或直接优化后的 .art 文件形式存在。
-
-
-
-进入 adb shell 找到 目标app 存放 oat 文件的路径并删除所有 oat 文件
+Войдите в adb shell, найдите путь к oat файлам целевого приложения и удалите все oat файлы
 
 ```
 wayne:/sdcard/Android/data/com.cyrus.example/dump_dex # cd /data/app
@@ -1436,7 +1429,7 @@ wayne:/data/app/com.shizhuang.duapp-fTxemmnM8l6298xbBELksQ==/oat/arm64 # rm -rf 
 ```
 
 
-重新执行 frida 脚本 dump dex，从输出可以看到 dump 下来的 dex 魔数都是 dex 039 / dex 035 （标准 Dex 文件的魔数）不是 cdex001，可以直接用 jadx 去反编译了。
+Повторно выполните скрипт frida для дампа dex, из вывода видно, что магия дампированных файлов - dex 039 / dex 035 (магия стандартных Dex файлов), их можно напрямую декомпилировать с помощью jadx.
 
 ```
 Spawning `com.shizhuang.duapp`...                                       
@@ -1622,15 +1615,15 @@ Spawned `com.shizhuang.duapp`. Use %resume to let the main thread start executin
 ```
 
 
-# **jadx 反编译 dex**
+# **Декомпиляция dex с помощью jadx**
 
 
 
-使用 jadx 反编译 dex。
+Используйте jadx для декомпиляции dex.
 
 
 
-jadx 项目地址：[https://github.com/skylot/jadx](https://github.com/skylot/jadx)
+Проект jadx: [https://github.com/skylot/jadx](https://github.com/skylot/jadx)
 
 
 
@@ -1639,18 +1632,18 @@ jadx 项目地址：[https://github.com/skylot/jadx](https://github.com/skylot/j
 ![word/media/image11.png](https://gitee.com/cyrus-studio/images/raw/master/4816e881ee8000e5b1919e2bff08a6a0.png)
 
 
-jadx 默认缓存目录
+Каталог кеша по умолчанию для jadx
 
 ```
 C:\Users\$USERNAME\AppData\Local\skylot\jadx\cache\projects
 ```
 
 
-# **DexFile 脱壳**
+# **Распаковка через DexFile**
 
 
 
-找到 CompactDexFile 构造函数方法符号信息如下：
+Найдите информацию о методе конструктора CompactDexFile:
 
 ```
 [+] libdexfile.so -> _ZN3art14CompactDexFileC1EPKhmS2_mRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjPKNS_10OatDexFileENS3_10unique_ptrINS_16DexFileContainerENS3_14default_deleteISG_EEEE @ 0x7aac6420e8
@@ -1658,7 +1651,7 @@ C:\Users\$USERNAME\AppData\Local\skylot\jadx\cache\projects
 ```
 
 
-hook CompactDexFile 和  StandardDexFile 的构造函数拿到 base、size 和 location 并 dump dex。
+Перехватите конструкторы CompactDexFile и StandardDexFile, чтобы получить base, size и location, и дампить dex.
 
 
 
@@ -1855,14 +1848,14 @@ setImmediate(function () {
 ```
 
 
-执行脚本：
+Выполните скрипт:
 
 ```
 frida -H 127.0.0.1:1234 -l dump_dex_from_dex_file.js -f com.cyrus.example
 ```
 
 
-输出如下：
+Вывод следующий:
 
 ```
 Spawning `com.cyrus.example`...                                         
@@ -2033,28 +2026,28 @@ Spawned `com.cyrus.example`. Use %resume to let the main thread start executing!
 ```
 
 
-把 dex 文件拉取到本地：
+Скопируйте файлы dex на локальный компьютер:
 
 ```
 adb pull /sdcard/Android/data/com.cyrus.example/dump_dex ./dumped_dex
 ```
 
 
-使用命令行工具 compact_dex_converter 把 cdex（Compact Dex）文件转换为标准 .dex 文件。
+Используйте командную строку compact_dex_converter для преобразования файлов cdex (Compact Dex) в стандартные .dex файлы.
 
 [https://github.com/anestisb/vdexExtractor#compact-dex-converter](https://github.com/anestisb/vdexExtractor#compact-dex-converter)
 
 
 
-# **dex2oat 脱壳**
+# **Распаковка через dex2oat**
 
 
 
-dex2oat 的流程也可以进行脱壳。
+Процесс dex2oat также можно использовать для распаковки.
 
 
 
-当安装 APK 时，如果需要 ahead-of-time (AOT) 编译，installd 会调用 dex2oat：
+При установке APK, если требуется компиляция ahead-of-time (AOT), installd вызывает dex2oat:
 
 
 
@@ -2063,7 +2056,7 @@ dex2oat 的流程也可以进行脱壳。
 
 
 
-进入 dex2oat.cc 的 main()，在 dex2oat::ReturnCode Setup() 方法中 将 dex 注册到 VerificationResults 时候可以拿到 dex_file 对象，这里也是一个很好的脱壳点。
+Войдите в main() dex2oat.cc, в методе dex2oat::ReturnCode Setup() при регистрации dex в VerificationResults можно получить объект dex_file, это также хорошая точка для распаковки.
 
 ```
 verification_results_->AddDexFile(dex_file);
@@ -2075,19 +2068,19 @@ verification_results_->AddDexFile(dex_file);
 
 
 
-# **完整源码**
+# **Полный исходный код**
 
 
 
-开源地址：[https://github.com/CYRUS-STUDIO/frida_dex_dump](https://github.com/CYRUS-STUDIO/frida_dex_dump)
+Открытый исходный код: [https://github.com/CYRUS-STUDIO/frida_dex_dump](https://github.com/CYRUS-STUDIO/frida_dex_dump)
 
 
 
-相关文章：
+Связанные статьи:
 
-- _[ART环境下dex加载流程分析及frida dump dex方案](https://bbs.kanxue.com/thread-277771.htm)_
+- _[Анализ процесса загрузки dex в среде ART и решение для дампа dex с помощью frida](https://bbs.kanxue.com/thread-277771.htm)_
 
-- _[拨云见日：安卓APP脱壳的本质以及如何快速发现ART下的脱壳点](https://bbs.kanxue.com/thread-254555.htm)_
+- _[Прояснение: суть распаковки приложений Android и как быстро найти точки для распаковки под ART](https://bbs.kanxue.com/thread-254555.htm)_
 
 
 

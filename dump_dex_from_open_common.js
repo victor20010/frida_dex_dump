@@ -63,7 +63,7 @@ function readStdString(str) {
 function findSymbolInLib(libname, keywordList) {
     const libBase = Module.findBaseAddress(libname);
     if (!libBase) {
-        console.error("[-] Library not loaded:", libname);
+        console.error("[-] Библиотека не загружена:", libname);
         return null;
     }
 
@@ -76,12 +76,12 @@ function findSymbolInLib(libname, keywordList) {
     }
 
     if (matches.length === 0) {
-        console.error("[-] No matching symbol found for keywords:", keywordList);
+        console.error("[-] Не найдено совпадающих символов для ключевых слов:", keywordList);
         return null;
     }
 
-    const target = matches[0]; // 取第一个匹配的
-    console.log("[+] Found symbol:", target.name, " @ ", target.address);
+    const target = matches[0]; // Возьмите первое совпадение
+    console.log("[+] Найден символ:", target.name, " @ ", target.address);
     return target.address;
 }
 
@@ -93,7 +93,7 @@ function dumpDexToFile(filename, base, size) {
         const dir = "/sdcard/Android/data/" + processName + "/dump_dex";
         const fullPath = dir + "/" + filename.replace(/\//g, "_").replace(/!/g, "_");
 
-        // 创建目录
+        // Создание каталога
         mkdir(dir);
 
         // dump dex
@@ -103,7 +103,7 @@ function dumpDexToFile(filename, base, size) {
             fd.write(dex_buffer);
             fd.flush();
             fd.close();
-            console.log("[+] Dex dumped to", fullPath);
+            console.log("[+] Dex выгружен в", fullPath);
         }
     }
 }
@@ -120,19 +120,19 @@ function hookDexFileLoaderOpenCommon() {
             const location_ptr = args[4]; // const std::string& location
             const location = readStdString(location_ptr);
 
-            console.log("\n[*] DexFileLoader::OpenCommon called");
-            console.log("    base       :", base);
-            console.log("    size       :", size);
-            console.log("    location   :", location);
+            console.log("\n[*] Вызван DexFileLoader::OpenCommon");
+            console.log("    база       :", base);
+            console.log("    размер       :", size);
+            console.log("    местоположение   :", location);
 
-            // 文件名
+            // Имя файла
             const filename = location.split("/").pop();
 
-            // 魔数
+            // Магия
             var magic = ptr(base).readCString();
-            console.log("    magic      :", magic)
+            console.log("    магия      :", magic)
 
-            // dex 格式校验
+            // Проверка формата dex
             if (magic.indexOf("dex") !== -1) {
                 dumpDexToFile(filename, base, size)
             }
