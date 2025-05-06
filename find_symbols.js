@@ -1,4 +1,3 @@
-// Frida 脚本：查找所有模块中包含 "OpenCommon" 或 "DexFileLoader" 的函数符号
 function scanModulesForKeywords(keywords) {
     const modules = Process.enumerateModules();
     keywords = keywords.map(k => k.toLowerCase());
@@ -15,15 +14,15 @@ function scanModulesForKeywords(keywords) {
                 }
             }
         } catch (e) {
-            // 某些模块无法枚举，忽略
+            // Некоторые модули не могут быть перечислены, игнорируем
         }
     }
 }
 
 setImmediate(() => {
-    console.log("[*] Scanning for symbols containing 'OpenCommon' or 'DexFileLoader' ...");
+    console.log("[*] Сканирование символов, содержащих 'OpenCommon' или 'DexFileLoader' ...");
     scanModulesForKeywords(["DexFile"]);
-    console.log("[*] Done.");
+    console.log("[*] Готово.");
 });
 
 

@@ -1,11 +1,11 @@
 function listAllFunctions(moduleName) {
     const baseAddr = Module.findBaseAddress(moduleName);
     if (!baseAddr) {
-        console.error(`[-] ${moduleName} not found.`);
+        console.error(`[-] ${moduleName} не найден.`);
         return;
     }
 
-    console.log(`[+] ${moduleName} base address:`, baseAddr);
+    console.log(`[+] ${moduleName} базовый адрес:`, baseAddr);
 
     const symbols = Module.enumerateSymbolsSync(moduleName);
     let count = 0;
@@ -17,10 +17,10 @@ function listAllFunctions(moduleName) {
         }
     }
 
-    console.log(`[*] Total function symbols found in ${moduleName}:`, count);
+    console.log(`[*] Всего найдено символов функций в ${moduleName}:`, count);
 }
 
-// 列出 libart.so 的所有函数
+// Перечисление всех функций в libart.so
 setImmediate(function () {
     listAllFunctions("libart.so");
 });
